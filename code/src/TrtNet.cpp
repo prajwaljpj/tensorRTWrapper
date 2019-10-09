@@ -87,7 +87,9 @@ namespace Tn
 
         mTrtRunTime = createInferRuntime(gLogger);     
         assert(mTrtRunTime != nullptr);
+        std::cout << "cuda engine before"<< std::endl;
         mTrtEngine= mTrtRunTime->deserializeCudaEngine(trtModelStream->data(), trtModelStream->size(), &mTrtPluginFactory);
+        std::cout << "cuda engine after"<< std::endl;
         assert(mTrtEngine != nullptr);
         // Deserialize the engine.
         trtModelStream->destroy();
@@ -118,7 +120,9 @@ namespace Tn
         std::cout << "deserializing" << std::endl;
         mTrtRunTime = createInferRuntime(gLogger);
         assert(mTrtRunTime != nullptr);
+        std::cout << "cuda engine before"<< std::endl;
         mTrtEngine= mTrtRunTime->deserializeCudaEngine(data.get(), length, &mTrtPluginFactory);
+        std::cout << "cuda engine after"<< std::endl;
         assert(mTrtEngine != nullptr);
 
         InitEngine();
@@ -200,6 +204,7 @@ namespace Tn
 
         std::cout << "Begin building engine..." << std::endl;
         ICudaEngine* engine = builder->buildCudaEngine(*network);
+        std::cout << "ICudaEngine pointer has loaded engine" << std::endl;
         if (!engine)
             RETURN_AND_LOG(nullptr, ERROR, "Unable to create engine");
         std::cout << "End building engine..." << std::endl;
