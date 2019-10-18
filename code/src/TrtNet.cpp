@@ -60,36 +60,36 @@ namespace Tn
                     const std::vector<std::vector<float>>& calibratorData,RUN_MODE mode /*= RUN_MODE::FLOAT32*/,int maxBatchSize /*= 1*/)
     :mTrtContext(nullptr),mTrtEngine(nullptr),mTrtRunTime(nullptr),mTrtRunMode(mode),mTrtInputCount(0),mTrtIterationTime(0),mTrtBatchSize(maxBatchSize)
     {
-        std::cout << "init plugin proto: " << prototxt << " caffemodel: " << caffemodel << std::endl;
-        auto parser = createCaffeParser();
+      std::cerr << "init plugin proto: " << prototxt << " caffemodel: " << caffemodel << std::endl;
+      auto parser = createCaffeParser();
 
-        IHostMemory* trtModelStream{nullptr};
+      IHostMemory* trtModelStream{nullptr};
 
-        Int8EntropyCalibrator * calibrator = nullptr;
-        if (calibratorData.size() > 0 ){
-            auto endPos= prototxt.find_last_of(".");
-	        auto beginPos= prototxt.find_last_of('/') + 1;
-            std::string calibratorName = prototxt.substr(beginPos,endPos - beginPos);
-            std::cout << "create calibrator,Named:" << calibratorName << std::endl;
-            calibrator = new Int8EntropyCalibrator(maxBatchSize,calibratorData,calibratorName);
-        }
+      Int8EntropyCalibrator * calibrator = nullptr;
+      if (calibratorData.size() > 0 ){
+	auto endPos= prototxt.find_last_of(".");
+	auto beginPos= prototxt.find_last_of('/') + 1;
+	std::string calibratorName = prototxt.substr(beginPos,endPos - beginPos);
+	std::cerr << "create calibrator,Named:" << calibratorName << std::endl;
+	calibrator = new Int8EntropyCalibrator(maxBatchSize,calibratorData,calibratorName);
+      }
 
-        PluginFactory pluginFactorySerialize;
-        ICudaEngine* tmpEngine = loadModelAndCreateEngine(prototxt.c_str(),caffemodel.c_str(), maxBatchSize, parser, &pluginFactorySerialize, calibrator, trtModelStream,outputNodesName);
-        assert(tmpEngine != nullptr);
-        assert(trtModelStream != nullptr);
-        if(calibrator){
-            delete calibrator;
-            calibrator = nullptr;
-        }
-        tmpEngine->destroy();
+      PluginFactory pluginFactorySerialize;
+      ICudaEngine* tmpEngine = loadModelAndCreateEngine(prototxt.c_str(),caffemodel.c_str(), maxBatchSize, parser, &pluginFactorySerialize, calibrator, trtModelStream,outputNodesName);
+      assert(tmpEngine != nullptr);
+      assert(trtModelStream != nullptr);
+      if(calibrator){
+	delete calibrator;
+	calibrator = nullptr;
+      }
+      tmpEngine->destroy();
         pluginFactorySerialize.destroyPlugin();
 
         mTrtRunTime = createInferRuntime(gLogger);     
         assert(mTrtRunTime != nullptr);
-        std::cout << "cuda engine before"<< std::endl;
+        std::cerr << "cuda engine before"<< std::endl;
         mTrtEngine= mTrtRunTime->deserializeCudaEngine(trtModelStream->data(), trtModelStream->size(), &mTrtPluginFactory);
-        std::cout << "cuda engine after"<< std::endl;
+        std::cerr << "cuda engine after"<< std::endl;
         assert(mTrtEngine != nullptr);
         // Deserialize the engine.
         trtModelStream->destroy();
@@ -106,7 +106,7 @@ namespace Tn
         file.open(engineFile,ios::binary | ios::in);
         if(!file.is_open())
         {
-            cout << "read engine file" << engineFile <<" failed" << endl;
+            cerr << "read engine file" << engineFile <<" failed" << endl;
             return;
         }
         file.seekg(0, ios::end); 
@@ -117,12 +117,12 @@ namespace Tn
 
         file.close();
 
-        std::cout << "deserializing" << std::endl;
+        std::cerr << "deserializing" << std::endl;
         mTrtRunTime = createInferRuntime(gLogger);
         assert(mTrtRunTime != nullptr);
-        std::cout << "cuda engine before"<< std::endl;
+        std::cerr << "cuda engine before"<< std::endl;
         mTrtEngine= mTrtRunTime->deserializeCudaEngine(data.get(), length, &mTrtPluginFactory);
-        std::cout << "cuda engine after"<< std::endl;
+        std::cerr << "cuda engine after"<< std::endl;
         assert(mTrtEngine != nullptr);
 
         InitEngine();
@@ -166,11 +166,11 @@ namespace Tn
         INetworkDefinition* network = builder->createNetwork();
         parser->setPluginFactory(pluginFactory);
 
-        std::cout << "Begin parsing model..." << std::endl;
+        std::cerr << "Begin parsing model..." << std::endl;
         const IBlobNameToTensor* blobNameToTensor = parser->parse(deployFile,modelFile, *network, nvinfer1::DataType::kFLOAT);
         if (!blobNameToTensor)
             RETURN_AND_LOG(nullptr, ERROR, "Fail to parse");
-        std::cout << "End parsing model..." << std::endl;
+        std::cerr << "End parsing model..." << std::endl;
 
         // specify which tensors are outputs
         for (auto& name : outputNodesName)
@@ -178,7 +178,7 @@ namespace Tn
             auto output = blobNameToTensor->find(name.c_str());
             assert(output!=nullptr);
             if (output == nullptr)
-                std::cout << "can not find output named " << name << std::endl;
+	      std::cerr << "can not find output named " << name << std::endl;
 
             network->markOutput(*output);
         }
@@ -188,26 +188,26 @@ namespace Tn
         builder->setMaxWorkspaceSize(1 << 30);// 1G
         if (mTrtRunMode == RUN_MODE::INT8)
         {
-             std::cout <<"setInt8Mode"<<std::endl;
-            if (!builder->platformHasFastInt8())
-                std::cout << "Notice: the platform do not has fast for int8" << std::endl;
+	  std::cerr <<"setInt8Mode"<<std::endl;
+	  if (!builder->platformHasFastInt8())
+	      std::cerr << "Notice: the platform do not has fast for int8" << std::endl;
             builder->setInt8Mode(true);
             builder->setInt8Calibrator(calibrator);
         }
         else if (mTrtRunMode == RUN_MODE::FLOAT16)
         {
-            std::cout <<"setFp16Mode"<<std::endl;
-            if (!builder->platformHasFastFp16())
-                std::cout << "Notice: the platform do not has fast for fp16" << std::endl;
+	  std::cerr <<"setFp16Mode"<<std::endl;
+	  if (!builder->platformHasFastFp16())
+	      std::cerr << "Notice: the platform do not has fast for fp16" << std::endl;
             builder->setFp16Mode(true);
         }
 
-        std::cout << "Begin building engine..." << std::endl;
+        std::cerr << "Begin building engine..." << std::endl;
         ICudaEngine* engine = builder->buildCudaEngine(*network);
-        std::cout << "ICudaEngine pointer has loaded engine" << std::endl;
+        std::cerr << "ICudaEngine pointer has loaded engine" << std::endl;
         if (!engine)
             RETURN_AND_LOG(nullptr, ERROR, "Unable to create engine");
-        std::cout << "End building engine..." << std::endl;
+        std::cerr << "End building engine..." << std::endl;
 
         // We don't need the network any more, and we can destroy the parser.
         network->destroy();
@@ -234,7 +234,7 @@ namespace Tn
         mTrtContext->execute(batchSize, &mTrtCudaBuffer[inputIndex]);
         auto t_end = std::chrono::high_resolution_clock::now();
         float total = std::chrono::duration<float, std::milli>(t_end - t_start).count();
-        std::cout << "Time taken for inference is " << total << " ms." << std::endl;
+        std::cerr << "Time taken for inference is " << total << " ms." << std::endl;
 
         for (size_t bindingIdx = mTrtInputCount; bindingIdx < mTrtBindBufferSize.size(); ++bindingIdx)
         {
