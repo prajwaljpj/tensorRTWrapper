@@ -117,12 +117,12 @@ namespace Tn
 
         file.close();
 
-        std::cerr << "deserializing" << std::endl;
+        //std::cerr << "deserializing" << std::endl;
         mTrtRunTime = createInferRuntime(gLogger);
         assert(mTrtRunTime != nullptr);
-        std::cerr << "cuda engine before"<< std::endl;
+        //std::cerr << "cuda engine before"<< std::endl;
         mTrtEngine= mTrtRunTime->deserializeCudaEngine(data.get(), length, &mTrtPluginFactory);
-        std::cerr << "cuda engine after"<< std::endl;
+        //std::cerr << "cuda engine after"<< std::endl;
         assert(mTrtEngine != nullptr);
 
         InitEngine();
@@ -234,7 +234,7 @@ namespace Tn
         mTrtContext->execute(batchSize, &mTrtCudaBuffer[inputIndex]);
         auto t_end = std::chrono::high_resolution_clock::now();
         float total = std::chrono::duration<float, std::milli>(t_end - t_start).count();
-        std::cerr << "Time taken for inference is " << total << " ms." << std::endl;
+        //std::cerr << "Time taken for inference is " << total << " ms." << std::endl;
 
         for (size_t bindingIdx = mTrtInputCount; bindingIdx < mTrtBindBufferSize.size(); ++bindingIdx)
         {
